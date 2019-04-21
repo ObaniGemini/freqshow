@@ -19,6 +19,8 @@
 #define MAX( a, b )		( a > b ? a : b )
 #define SQUARE( a )		( a * a )
 
+#define COLOR			( rand() % 256 ) | (( rand() % 256 ) << 8) | (( rand() % 256 ) << 16) | ( 255 << 24 )
+
 
 
 fftw_complex * infftw = NULL;
@@ -33,18 +35,22 @@ void drawLine( uint32_t *pixels, int x1, int y1, int x2, int y2 ) {
 	int u = x2 - x1, x;
 	/* v est la différence en y pour recentrer le segment en 0 côté ordonnées */
 	int v = y2 - y1;
+	if( y1 == 0 && y2 == 0 )
+		return;
+
 	printf("%d %d %d %d\n", x1, y1, x2, y2);
+
 	if(u > v) {
 		float p = v / (float)u, y;
 		for(x = 0, y = 0; x <= u; x++) {
 			y += p;
-			pixels[x1 + x + (y1 + ((int)y))*WIDTH] = 255 | ( 255 << 8 ) | ( 255 << 16 ) | ( 255 << 24 );
+			pixels[x1 + x + (y1 + ((int)y))*WIDTH] = COLOR;
 		}
 	} else {
 		float p = u / (float)v, y;
 		for(x = 0, y = 0; x <= v; x++) {
 			y += p;
-			pixels[x1 + ((int)y) + (y1 + x)*WIDTH] = 255 | ( 255 << 8 ) | ( 255 << 16 ) | ( 255 << 24 );
+			pixels[x1 + (int)y + (y1 + x)*WIDTH] = COLOR;
 		}
 	}
 }
@@ -66,9 +72,10 @@ void mixCallback(void *udata, Uint8 *stream, int len) {
 		} else {
 			hauteurs2[i] = pos;
 		}
+
 		for( int j = 1; j < 4; j++ ) {
 			hauteurs1[i + j] = MIN(hauteurs1[i], 255);
-			hauteurs2[i + j] = MAX(hauteurs2[i], -255);
+			hauteurs2[i + j] = MAX(hauteurs2[i], 0);
 		}
 	}
 }
@@ -110,15 +117,15 @@ int main( int argc, char **argv ) {
 		if (SDL_PollEvent( &e ) && (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE)))
 			break;
 
-		if( i == 16 ) {
+		if( i == 12 ) {
 			i = 0;
 			memset(pixels, 0, PIXELS * sizeof(uint32_t));
 		}
 
 		for( int i = 1; i < ECHANTILLONS; ++i) {
-			pixels[(i * (WIDTH - 1)) / (ECHANTILLONS - 1) + hauteurs1[i]*WIDTH] = ( rand() % 256 ) | (( rand() % 256 ) << 8) | (( rand() % 256 ) << 16) | 255;
+			//pixels[(i * (WIDTH - 1)) / (ECHANTILLONS - 1) + hauteurs1[i]*WIDTH] = ( rand() % 256 ) | (( rand() % 256 ) << 8) | (( rand() % 256 ) << 16) | 255;
 			//pixels[PIXELS - (i * (WIDTH - 1)) / (ECHANTILLONS - 1) + hauteurs2[i]*WIDTH] = ( rand() % 256 ) | (( rand() % 256 ) << 8) | (( rand() % 256 ) << 16) | 255;
-			//drawLine( pixels, (i * (WIDTH - 1)) / (ECHANTILLONS - 1), hauteurs1[i], PIXELS - (i * (WIDTH - 1)) / (ECHANTILLONS - 1), hauteurs2[i] );
+			drawLine( pixels, ((i-1) * (WIDTH - 1)) / (ECHANTILLONS - 1), hauteurs1[i-1], (i * (WIDTH - 1)) / (ECHANTILLONS - 1), hauteurs1[i] );
 		}
 
 
